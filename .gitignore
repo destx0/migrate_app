@@ -6,3 +6,4 @@ dist/
 *.exe
 *.pkg
 __pycache__/
+firebase_config.py
