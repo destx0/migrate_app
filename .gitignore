@@ -1,0 +1,8 @@
+# Ignore build and dist folders
+build/
+dist/
+
+# Ignore compiled executables
+*.exe
+*.pkg
+__pycache__/
