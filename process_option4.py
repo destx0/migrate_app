@@ -48,7 +48,6 @@ def download_image(url, temp_dir):
 def extract_image_urls(content):
     img_pattern = r'<img\s+[^>]*src\s*=\s*["\']([^"\']+)["\'][^>]*>'
     return re.findall(img_pattern, content, re.IGNORECASE)
-
 def process_option4(file_path, progress_callback, status_callback):
     try:
         bucket = setup_firebase()
@@ -64,12 +63,23 @@ def process_option4(file_path, progress_callback, status_callback):
     
     for i, item in enumerate(data):
         if isinstance(item, str):
+            # First, remove inline image tags with skipped URLs
+            for skip_url in SKIP_IMAGE_URLS:
+                pattern = re.compile(f'<img[^>]*src=["\']([^"\']*{skip_url}[^"\']*)["\'][^>]*>')
+                if pattern.search(item):
+                    item = pattern.sub('', item)
+                    updated = True
+                    status_callback.emit(f"Removed inline image with skipped URL: {skip_url}")
+            
+            # Then process the remaining images
             image_urls = extract_image_urls(item)
             total_urls = len(image_urls)
             for j, old_url in enumerate(image_urls):
                 normalized_url = normalize_url(old_url)
                 if should_skip_url(normalized_url):
-                    status_callback.emit(f"Skipping URL: {normalized_url}")
+                    status_callback.emit(f"Skipping and removing URL: {normalized_url}")
+                    item = re.sub(f'<img[^>]*src=["\'{normalized_url}"\'[^>]*>', '', item)
+                    updated = True
                     continue
 
                 status_callback.emit(f"Processing image {j+1}/{total_urls} in item {i+1}/{total_items}")
@@ -90,7 +100,7 @@ def process_option4(file_path, progress_callback, status_callback):
                             remote_path = f"migrated_images/{file_name}"
                             firebase_url = upload_to_firebase(bucket, processed_path, remote_path)
 
-                            data[i] = data[i].replace(old_url, firebase_url)
+                            item = item.replace(old_url, firebase_url)
                             updated = True
                             status_callback.emit(f"Processed and uploaded: {old_url} -> {firebase_url}")
                         except Exception as e:
@@ -100,6 +110,9 @@ def process_option4(file_path, progress_callback, status_callback):
 
                 progress = int((i * total_urls + j + 1) / (total_items * total_urls) * 100)
                 progress_callback.emit(progress)
+            
+            # Update the item in the data list
+            data[i] = item
 
     if updated:
         output_file = os.path.join(os.path.dirname(file_path), f"updated_{os.path.basename(file_path)}")
