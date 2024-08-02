@@ -115,7 +115,7 @@ def process_option4(file_path, progress_callback, status_callback):
             data[i] = item
 
     if updated:
-        output_file = os.path.join(os.path.dirname(file_path), f"updated_{os.path.basename(file_path)}")
+        output_file = os.path.join(os.path.dirname(file_path), f"M_{os.path.basename(file_path)}")
         with open(output_file, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=2)
         status_callback.emit(f"Updated file saved as: {output_file}")
