@@ -1,5 +1,9 @@
 import cv2
 import numpy as np
+import warnings
+
+# Suppress the libpng warning
+warnings.filterwarnings("ignore", category=UserWarning, module="cv2")
 
 def hex_to_bgr(hex_color):
     hex_color = hex_color.lstrip("#")
